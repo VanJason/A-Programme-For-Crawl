@@ -42,56 +42,70 @@ class Programme_gdcw():
 		weblist=[]
 		if state is True:
 			while True:
+				time.sleep(3)
 				soup = BeautifulSoup(info.page_source)
+
 				website = soup.find_all(href=re.compile("showNotice"))
+				nextpage = soup.find('a',text = re.compile(u"下一页"))
+				dateall = soup.find_all('em', text = re.compile("\d{4}-\d+-\d+\s\d+:\d+"))
 
 				for web in website:
 					gotoweb = web['href']
 					weblist.append(gotoweb)
-				time.sleep(3)	
 
-				nextpage = soup.find('a',text = re.compile(u"下一页"))
+				for date in dateall:
+					datestr  = date.get_text()
+					dateint = int(datestr[0]+datestr[1]+datestr[2]+datestr[3]+datestr[5]+datestr[6]+datestr[8]+datestr[9])
+					self.datelist.append(dateint)	
+
+
 				try:
 					judgenextpage = nextpage['href']
 					info.execute_script('var page=document.getElementsByName("pageIndex");var count=Number(page[0].value)+1;turnOverPage(count);')
+					print("翻1页")
 					time.sleep(3)
 				except:
 					break
 			
 		else:
 			while True:
+				time.sleep(3)
+				webindex = []
+				dateindex = []
+				site = 0
+
 				soup = BeautifulSoup(info.page_source)
+
 				nextpage = soup.find('a',text = re.compile(u"下一页"))
 				dateall = soup.find_all('em', text = re.compile("\d{4}-\d+-\d+\s\d+:\d+"))
+				website = soup.find_all(href=re.compile("showNotice"))
+
 				for date in dateall:
-					datestr  = date.get_text()
+					datestr = date.get_text()
 					dateint = int(datestr[0]+datestr[1]+datestr[2]+datestr[3]+datestr[5]+datestr[6]+datestr[8]+datestr[9])
-					self.datelist.append(dateint)
-				if endtime < self.datelist[len(self.datelist)-1]:
+					dateindex.append(dateint)
+
+				for web in website:
+					gotoweb = web['href']
+					webindex.append(gotoweb)
+
+				for dateindex_unit in dateindex:
+					if starttime <= dateindex_unit <= endtime:
+						self.datelist.append(dateindex_unit)
+						weblist.append(webindex[site])
+					else:
+						None
+					site +=1
+				if starttime < dateindex[len(dateindex)-1]:
 					try:
 						judgenextpage = nextpage['href']
 						info.execute_script('var page=document.getElementsByName("pageIndex");var count=Number(page[0].value)+1;turnOverPage(count);')
-						time.sleep(5)
+						print("翻1页")
+						time.sleep(3)
 					except:
 						break
 				else:
-					website = soup.find_all(href=re.compile("showNotice"))
-
-					for web in website:
-						gotoweb = web['href']
-						weblist.append(gotoweb)
-					time.sleep(3)
-
-					if starttime < self.datelist[len(self.datelist)-1]:
-						try:
-							judgenextpage = nextpage['href']
-							info.execute_script('var page=document.getElementsByName("pageIndex");var count=Number(page[0].value)+1;turnOverPage(count);')
-							time.sleep(5)
-						except:
-							break
-					else:
-						break
-				
+					break
 
 		return weblist
 
@@ -255,7 +269,11 @@ class Programme_gdcw():
 				buyer_all.append(message_unit)
 
 			except:
-				None
+				try:
+					buyer_unit = message_unit.index(u"采购单位名称")
+					buyer_all.append(message_unit)
+				except:
+					None
 		if len(buyer_all) != 0:
 			buyer = buyer_all[0]
 			return buyer[7:]
@@ -366,16 +384,6 @@ class Programme_gdcw():
 			i +=1
 
 		wbk.save(filename)
-		
-
-	# info = get_content('http://www.gdgpo.gov.cn/')
-	# WBall= get_Web(info)
-	# print(get_programme(WBall))
-
-# p = Programme_gdcw()
-# info = p.get_content_gdcw("http://www.gdgpo.gov.cn/","采购公告","","广州市第十二人民医院")
-# WBall = p.get_Web_gdcw(info,None,None,True)
-# p.get_programme_gdcw(WBall,"gdcwtest.xls",True,True,True,True,True,True,True,True)
 
 
 
