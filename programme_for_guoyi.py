@@ -11,10 +11,11 @@ from bs4 import BeautifulSoup
 import xlwt
 from selenium import webdriver
 from bs4 import BeautifulSoup
+import time
+import random
 
 class Programme_guoyi():
 	datalist = []
-	dateindex = []
 	
 	def get_Web_guoyi(self,url,typetext,keyword):
 		"""
@@ -31,7 +32,7 @@ class Programme_guoyi():
 			driver.find_element_by_link_text(typetext).click()
 		else:
 			driver.find_element_by_link_text(u"招标公告").click()
-			driver.find_element_by_xpath("//form[@id='aspnetForm']/table/tbody/tr[1]/td[2]/a/img").click()
+			# driver.find_element_by_xpath("//form[@id='aspnetForm']/table/tbody/tr[1]/td[2]/a/img").click()
 		driver.find_element_by_name("Keyword").clear()
 		driver.find_element_by_name("Keyword").send_keys(keyword)
 		driver.find_element_by_css_selector("a > img").click()
@@ -58,10 +59,12 @@ class Programme_guoyi():
 		driver.quite()
 
 	def get_programme_guoyi(self,info,startime,endtime,state):
+		weblist = []
 
-		weblist=[]
 		if state == True:
 			while True:
+				pagedate = []
+
 				soup = BeautifulSoup(info.page_source)
 				website = soup.find_all(href=re.compile("snid"))
 
@@ -71,7 +74,8 @@ class Programme_guoyi():
 
 				dataall = soup.find_all("td",text = re.compile("\d{2}-\d+-\d+"))
 				for data in dataall:
-					self.datalist.append(data.get_text())
+					datastr = data.get_text()
+					self.datalist.append(int("20"+datastr[0]+datastr[1]+datastr[3]+datastr[4]+datastr[6]+datastr[7]))
 
 				try:
 					nextpage = soup.find("input", id = "ctl00_PageContent_btnNextPage")
@@ -79,42 +83,55 @@ class Programme_guoyi():
 					break
 				except:
 					info.find_element_by_id("ctl00_PageContent_btnNextPage").click()
+					print("翻1页")
+					time.sleep(random.randint(3,5))
 		else:
 			while True:
+				webindex = []
+				dateindex = []
+				site = 0
+
 				soup = BeautifulSoup(info.page_source)
+
 				dateevery = soup.find_all("td",text = re.compile("\d{2}-\d+-\d+"))
-				for date in dateevery:
-					strdate = date.get_text()
-					self.dateindex.append(int("20" + strdate[0]+strdate[1]+strdate[3]+strdate[4]+strdate[6]+strdate[7]))
-				
-				if endtime < self.dateindex[len(self.dateindex)-1]:
+				website = soup.find_all(href=re.compile("snid"))
+
+				# print(len(dateevery),len(website))
+				# break
+
+				for web in website:
+					gotoweb = web['href']
+					webindex.append(gotoweb)
+
+				for date_unit in dateevery:
+					datestr = date_unit.get_text()
+					dateindex.append(int("20"+datestr[0]+datestr[1]+datestr[3]+datestr[4]+datestr[6]+datestr[7]))
+
+				for dateindex_unit in dateindex:
+					if startime<= dateindex_unit <= endtime:
+						self.datalist.append(dateindex_unit)
+						weblist.append(webindex[site])
+					else:
+						None
+					site +=1
+
+				if startime < dateindex[len(dateindex)-1]:
 					try:
 						nextpage = soup.find("input", id = "ctl00_PageContent_btnNextPage")
 						judge = nextpage['disabled']
 						break
 					except:
 						info.find_element_by_id("ctl00_PageContent_btnNextPage").click()
-				
+						print("翻1页")
+						time.sleep(random.randint(3,5))
 				else:
-					website = soup.find_all(href=re.compile("snid"))
-					for web in website:
-						gotoweb = web['href']
-						weblist.append(gotoweb)
+					break
 
-					dataall = soup.find_all("td",text = re.compile("\d{2}-\d+-\d+"))
-					for data in dataall:
-						self.datalist.append(data.get_text())
-					if startime < self.dateindex[len(self.dateindex)-1]:
-						try:
-							nextpage = soup.find("input", id = "ctl00_PageContent_btnNextPage")
-							judge = nextpage['disabled']
-							break
-						except:
-							info.find_element_by_id("ctl00_PageContent_btnNextPage").click()
-					else:
-						break
 
 		return weblist
+
+
+
 
 				
 	def get_title_guoyi(self,soup):
@@ -308,10 +325,6 @@ class Programme_guoyi():
 		print("sucess")
 
 		wbk.save(filename)
-# p = Programme_guoyi()
-# info = p.get_Web_guoyi("http://www.gmgit.com/","招标公告","广州市第十二人民医院")
-# WBall = p.get_programme_guoyi(info,None,None,True)
-# p.get_detail_guoyi(WBall,"testguoyi.xls",True,True,True,True,True,True,True,True)
 
 
 
