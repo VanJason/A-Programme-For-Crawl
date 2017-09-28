@@ -6,3 +6,5 @@ This project including three websites name"国义招标网","广东政府资源�
 REMARK:
 1.RUNNING ENVIRONMENT:(1)Python3.6.1  (2)Windows10(recommend) (3)Selenium(newest version) 
 2.NECESSARY LIB:(1)BeautifulSoup  (2)xlwt (3)PyQt5
+
+All files will be extend by "mainwindow.py",so when you want to run the file you just have to input "python mainwindow.py" on CMD.
