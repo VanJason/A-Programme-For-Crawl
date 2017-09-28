@@ -11,6 +11,8 @@ from bs4 import BeautifulSoup
 import xlwt
 from selenium import webdriver
 from bs4 import BeautifulSoup
+import time
+import random
 
 # def get_content(url):
 # 	driver = webdriver.PhantomJS()
@@ -26,7 +28,6 @@ from bs4 import BeautifulSoup
 
 # 	return driver
 class Programme_gzcw():
-	datalist = []
 	programme_name_list = []
 	dateindex = []
 
@@ -59,11 +60,9 @@ class Programme_gzcw():
 				programmelist = []
 				soup = BeautifulSoup(info.page_source)
 
-				dateall = soup.find_all('td',text = re.compile("\d{4}-\d+-\d+"))
-				for date in dateall:
-					self.datalist.append(date.get_text())
-
 				website = soup.find_all(href=re.compile("layout3"))
+				dateall = soup.find_all('td',text = re.compile("\d{4}-\d+-\d+"))
+
 				for web in website:
 					weblist.append(web['href'])
 					programmelist.append(web.get_text())
@@ -74,64 +73,73 @@ class Programme_gzcw():
 
 				for web_unit in weblist:
 					corrt_weblist.append(web_unit)
-				for programme in programmelist:
-					self.programme_name_list.append(programme)
+				for programmelist_unit in programmelist:
+					self.programme_name_list.append(programmelist_unit)
 
-				pageall = soup.find('span',text = re.compile(u"共\d*页")).get_text()
-				pagenow = soup.find('span',text = re.compile(u"第\d*页")).get_text()
-				if int(pagenow[1]) < int(pageall[1]):
-					info.find_element_by_link_text("下一页").click()
-				else:
-					break
-		else:
-			while True:
-
-				soup = BeautifulSoup(info.page_source)
-
-				dateall = soup.find_all('td',text = re.compile("\d{4}-\d+-\d+"))
 				for date in dateall:
-					self.datalist.append(date.get_text())
 					datestr = date.get_text()
 					dateint = int(datestr[0]+datestr[1]+datestr[2]+datestr[3]+datestr[5]+datestr[6]+datestr[8]+datestr[9])
 					self.dateindex.append(dateint)
 
-				if endtime < self.dateindex[len(self.dateindex)-1]:
+				pageall = soup.find('span',text = re.compile(u"共\d*页")).get_text()
+				pagenow = soup.find('span',text = re.compile(u"第\d*页")).get_text()
+				pageallint = re.findall("\d+",pageall)
+				pagenowint = re.findall("\d+",pagenow)
+				if int(pagenowint[0]) < int(pageallint[0]):
+					info.find_element_by_link_text("下一页").click()
+					print("翻1页")
+					time.sleep(random.randint(3,5))
+				else:
+					break
+
+		else:
+			while True:
+				datelist = []
+				weblist = []
+				site = 0
+				programmelist = []
+
+				soup = BeautifulSoup(info.page_source)
+
+				dateall = soup.find_all('td',text = re.compile("\d{4}-\d+-\d+"))
+				website = soup.find_all(href=re.compile("layout3"))
+
+				for web in website:
+					weblist.append(web['href'])
+					programmelist.append(web.get_text())
+				weblist.remove(weblist[0])
+				weblist.remove(weblist[0])
+				programmelist.remove(programmelist[0])
+				programmelist.remove(programmelist[0])
+
+				for date in dateall:
+					datestr = date.get_text()
+					dateint = int(datestr[0]+datestr[1]+datestr[2]+datestr[3]+datestr[5]+datestr[6]+datestr[8]+datestr[9])
+					datelist.append(dateint)
+
+				for datelist_unit in datelist:
+					if starttime<= datelist_unit <= endtime:
+						self.dateindex.append(datelist_unit)
+						self.programme_name_list.append(programmelist[site])
+						corrt_weblist.append(weblist[site])
+					else:
+						None
+					site +=1
+
+				if starttime > datelist[len(datelist)-1]:
+					break
+				else:
 					pageall = soup.find('span',text = re.compile(u"共\d*页")).get_text()
 					pagenow = soup.find('span',text = re.compile(u"第\d*页")).get_text()
-					if pagenow == pageall:
-						break
-					else:
+					pageallint = re.findall("\d+",pageall)
+					pagenowint = re.findall("\d+",pagenow)
+					if int(pagenowint[0]) < int(pageallint[0]):
 						info.find_element_by_link_text("下一页").click()
-
-				else:
-					weblist=[]
-					programmelist = []
-					website = soup.find_all(href=re.compile("layout3"))
-
-					for web in website:
-						weblist.append(web['href'])
-						programmelist.append(web.get_text())
-					weblist.remove(weblist[0])
-					weblist.remove(weblist[0])
-					programmelist.remove(programmelist[0])
-					programmelist.remove(programmelist[0])					
-
-					for web_unit in weblist:
-						corrt_weblist.append(web_unit)
-					for programme in programmelist:
-						self.programme_name_list.append(programme)
-
-					if starttime <self.dateindex[len(self.dateindex)-1]:
-						pageall = soup.find('span',text = re.compile(u"共\d*页")).get_text()
-						pagenow = soup.find('span',text = re.compile(u"第\d*页")).get_text()
-						if pagenow == pageall:
-							break
-						else:
-							info.find_element_by_link_text("下一页").click()
-
+						print("翻1页")
+						time.sleep(random.randint(3,5))
 					else:
 						break
-		
+
 		return corrt_weblist
 
 	def get_agentcompany_gzcw(self,list_table):
@@ -176,6 +184,7 @@ class Programme_gzcw():
 		i = 0
 		site = 0
 		j = 0
+		showtime = None
 		for message in list_table:
 			try:
 				message.index(u"和开标时间")
@@ -185,9 +194,9 @@ class Programme_gzcw():
 
 		if site !=0:
 			if len(list_table[site+1]) < 2:
-				return list_table[site +2]
+				showtime =  list_table[site +2]
 			else:
-				return list_table[site+1]
+				showtime = list_table[site+1]
 		else:
 			for message2 in list_table:
 				try:
@@ -197,11 +206,20 @@ class Programme_gzcw():
 					j +=1
 			if site !=0:
 				if len(list_table[site+1]) <2:
-					return list_table[site+2]
+					showtime =  list_table[site+2]
 				else:
-					return list_table[site+1]
+					showtime =  list_table[site+1]
 			else:
-				return None
+				None
+		try:
+			showtimefind = re.findall(r"\d+\年\d+\月\d+\日",showtime)
+		except:
+			showtimefind = ""
+
+		if len(showtimefind) !=0:
+			return showtimefind[0]
+		else:
+			return None
 
 	def get_account_gzcw(self,list_table):
 		"""
@@ -236,13 +254,20 @@ class Programme_gzcw():
 					mes.index(u"成交金额")
 					site = i
 				except:
-					i +=1
+					try:
+						mes.index(u"总报价")
+						site = i
+					except:
+						i +=1
 
 
 		if site !=0:
 			moneylist = re.findall(r"\d+\.?\d*",list_table[site])
-			money = float(moneylist[0])
-			return money
+			if len(moneylist) !=0:
+				money = float(moneylist[0])
+				return money
+			else:
+				return None
 
 		else:
 			return "无法获取"
@@ -316,7 +341,7 @@ class Programme_gzcw():
 			else:
 				None
 			if state3 is True:
-				sheet.write(excel_count,0,self.datalist[excel_count-1])
+				sheet.write(excel_count,0,self.dateindex[excel_count-1])
 			else:
 				None
 			if state4 is True:	
@@ -343,14 +368,4 @@ class Programme_gzcw():
 			excel_count +=1
 
 		wbk.save(filename)
-
-	# info = get_content('http://www.gzggzy.cn')
-	# info = get_content2('http://www.gzggzy.cn/cms/wz/view/index/layout2/zfcglist.jsp?siteId=1&channelId=456')
-	# WBall = get_web(info)
-	# print(get_detail(WBall))
-
-# p = Programme_gzcw()
-# info = p.get_content2_gzcw("http://www.gzggzy.cn/cms/wz/view/index/layout2/zfcglist.jsp?siteId=1&channelId=456","广州市第一人民医院")
-# WBall = p.get_web_gzcw(info,None,None,True)
-# p.get_detail_gzcw(WBall,"gzcwtest.xls",True,True,True,True,True,True,True,True)
 
